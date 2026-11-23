@@ -1,0 +1,248 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'city', 'state', 'customCategories', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'photoURL', 'city', 'state', 'customCategories', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.city is string && data.city.size() >= 1 && data.city.size() <= 60
+        && data.state is string && data.state.size() >= 1 && data.state.size() <= 60
+        && data.customCategories is list && data.customCategories.size() <= 12
+        && (data.customCategories.size() == 0 || (data.customCategories[0] is string && data.customCategories[0].size() <= 50))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidListing(data) {
+      return data.keys().hasAll([
+          'id', 'sellerId', 'sellerName', 'title', 'description',
+          'priceUsd', 'category', 'condition', 'state', 'city',
+          'lat', 'lng', 'imageUrl', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'sellerId', 'sellerName', 'title', 'description',
+          'priceUsd', 'category', 'condition', 'state', 'city',
+          'lat', 'lng', 'imageUrl', 'status', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.sellerId)
+        && data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 100
+        && data.description is string && data.description.size() <= 600
+        && (data.priceUsd is int || data.priceUsd is float) && data.priceUsd > 0 && data.priceUsd <= 1000000
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 50
+        && data.condition in ['Nuevo', 'Como nuevo', 'Usado']
+        && data.state is string && data.state.size() >= 1 && data.state.size() <= 60
+        && data.city is string && data.city.size() >= 1 && data.city.size() <= 60
+        && (data.lat is int || data.lat is float)
+        && (data.lng is int || data.lng is float)
+        && data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 350000
+        && data.status in ['active', 'sold']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidChatThread(data) {
+      return data.keys().hasAll([
+          'id', 'listingId', 'listingTitle', 'listingPrice', 'listingImage',
+          'buyerId', 'buyerName', 'sellerId', 'sellerName',
+          'participantIds', 'lastMessage', 'lastMessageAt', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'listingId', 'listingTitle', 'listingPrice', 'listingImage',
+          'buyerId', 'buyerName', 'sellerId', 'sellerName',
+          'participantIds', 'lastMessage', 'lastMessageAt', 'createdAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.listingId)
+        && data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 100
+        && (data.listingPrice is int || data.listingPrice is float) && data.listingPrice > 0
+        && data.listingImage is string && data.listingImage.size() <= 350000
+        && isValidId(data.buyerId)
+        && data.buyerName is string && data.buyerName.size() >= 1 && data.buyerName.size() <= 80
+        && isValidId(data.sellerId)
+        && data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80
+        && data.participantIds is list && data.participantIds.size() == 2
+        && data.participantIds[0] == data.buyerId
+        && data.participantIds[1] == data.sellerId
+        && data.lastMessage is string && data.lastMessage.size() <= 300
+        && data.lastMessageAt is timestamp
+        && data.createdAt is timestamp;
+    }
+
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['id', 'senderId', 'participantIds', 'text', 'createdAt'])
+        && data.keys().hasOnly(['id', 'senderId', 'participantIds', 'text', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.senderId)
+        && data.participantIds is list && data.participantIds.size() == 2
+        && data.participantIds[0] is string && data.participantIds[0].size() <= 128
+        && data.participantIds[1] is string && data.participantIds[1].size() <= 128
+        && data.text is string && data.text.size() >= 1 && data.text.size() <= 500
+        && data.createdAt is timestamp;
+    }
+
+    function isValidPurchase(data) {
+      return data.keys().hasAll([
+          'id', 'listingId', 'listingTitle', 'listingImage',
+          'priceUsd', 'buyerId', 'sellerId', 'sellerName',
+          'city', 'state', 'status', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'listingId', 'listingTitle', 'listingImage',
+          'priceUsd', 'buyerId', 'sellerId', 'sellerName',
+          'city', 'state', 'status', 'createdAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.listingId)
+        && data.listingTitle is string && data.listingTitle.size() >= 1 && data.listingTitle.size() <= 100
+        && data.listingImage is string && data.listingImage.size() <= 350000
+        && (data.priceUsd is int || data.priceUsd is float) && data.priceUsd > 0
+        && isValidId(data.buyerId)
+        && isValidId(data.sellerId)
+        && data.sellerName is string && data.sellerName.size() >= 1 && data.sellerName.size() <= 80
+        && data.city is string && data.city.size() >= 1 && data.city.size() <= 60
+        && data.state is string && data.state.size() >= 1 && data.state.size() <= 60
+        && data.status == 'completed'
+        && data.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'city', 'state', 'customCategories', 'updatedAt'])
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /listings/{listingId} {
+      allow get: if isValidId(listingId);
+      allow list: if resource.data.status in ['active', 'sold'];
+      allow create: if isVerifiedUser()
+        && isValidId(listingId)
+        && isValidListing(incoming())
+        && incoming().id == listingId
+        && incoming().sellerId == request.auth.uid
+        && incoming().status == 'active'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(listingId)
+        && isValidListing(incoming())
+        && existing().status == 'active'
+        && existing().sellerId == request.auth.uid
+        && incoming().id == existing().id
+        && incoming().sellerId == existing().sellerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'priceUsd', 'category', 'condition', 'state', 'city', 'lat', 'lng', 'imageUrl', 'updatedAt'])
+          || (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) && incoming().status == 'sold')
+        );
+      allow delete: if isVerifiedUser()
+        && isValidId(listingId)
+        && existing().sellerId == request.auth.uid;
+    }
+
+    match /chats/{chatId} {
+      allow get: if isSignedIn()
+        && isValidId(chatId)
+        && request.auth.uid in existing().participantIds;
+      allow list: if isSignedIn()
+        && request.auth.uid in resource.data.participantIds;
+      allow create: if isVerifiedUser()
+        && isValidId(chatId)
+        && isValidChatThread(incoming())
+        && incoming().id == chatId
+        && incoming().buyerId == request.auth.uid
+        && incoming().buyerId != incoming().sellerId
+        && incoming().createdAt == request.time
+        && incoming().lastMessageAt == request.time
+        && exists(/databases/$(database)/documents/listings/$(incoming().listingId));
+      allow update: if isVerifiedUser()
+        && isValidId(chatId)
+        && isValidChatThread(incoming())
+        && request.auth.uid in existing().participantIds
+        && incoming().id == existing().id
+        && incoming().listingId == existing().listingId
+        && incoming().buyerId == existing().buyerId
+        && incoming().sellerId == existing().sellerId
+        && incoming().participantIds == existing().participantIds
+        && incoming().createdAt == existing().createdAt
+        && incoming().lastMessageAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'lastMessageAt']);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow get: if isSignedIn()
+          && isValidId(chatId)
+          && isValidId(messageId)
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+        allow list: if isSignedIn()
+          && request.auth.uid in resource.data.participantIds;
+        allow create: if isVerifiedUser()
+          && isValidId(chatId)
+          && isValidId(messageId)
+          && isValidChatMessage(incoming())
+          && incoming().id == messageId
+          && incoming().senderId == request.auth.uid
+          && incoming().createdAt == request.time
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds
+          && incoming().participantIds == get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+        allow update, delete: if false;
+      }
+    }
+
+    match /purchases/{purchaseId} {
+      allow get: if isSignedIn()
+        && isValidId(purchaseId)
+        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid);
+      allow list: if isSignedIn()
+        && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+      allow create: if isVerifiedUser()
+        && isValidId(purchaseId)
+        && isValidPurchase(incoming())
+        && incoming().id == purchaseId
+        && incoming().buyerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/listings/$(incoming().listingId));
+      allow update, delete: if false;
+    }
+  }
+}

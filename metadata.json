@@ -1,0 +1,6 @@
+{
+  "name": "Mercao — Marketplace Venezuela",
+  "description": "Marketplace móvil minimalista para Venezuela. Compra, vende y chatea por ciudad y estado de forma directa y rápida.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
