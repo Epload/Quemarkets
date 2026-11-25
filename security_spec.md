@@ -1,22 +1,26 @@
-# Mercao Security Specification (Phase 0)
+# Quemarket Security Specification (Phase 0)
 
 ## 1. Data Invariants
-1. **UserProfile (`/users/{userId}`)**: Only the authenticated, email-verified owner (`request.auth.uid == userId`) can read, create, or update their profile. `uid` is immutable and must equal `request.auth.uid`. `customCategories` is bounded to max 12 items.
-2. **Listing (`/listings/{listingId}`)**: Publicly readable catalog items containing zero PII. Only verified authenticated users can create listings with `sellerId == request.auth.uid` and `status == 'active'`. Only the seller can edit or mark a listing `'sold'` (terminal state lock once `'sold'`). `createdAt` and `sellerId` are immutable.
-3. **ChatThread (`/chats/{chatId}`)**: Strictly private to the 2 participants (`buyerId`, `sellerId`, stored in `participantIds` of length 2). Only verified participants can read, list, create (as `buyerId`), or update (`lastMessage`, `lastMessageAt`).
-4. **ChatMessage (`/chats/{chatId}/messages/{messageId}`)**: Governed by the Master Gate (`get(/databases/$(database)/documents/chats/$(chatId))`). Only verified members of the parent chat (`request.auth.uid in parent.participantIds`) can read or create messages with `senderId == request.auth.uid` and `participantIds == parent.participantIds`. Messages are immutable.
-5. **Purchase (`/purchases/{purchaseId}`)**: Only `buyerId` or `sellerId` can read or list a purchase record. Only verified `buyerId` can create a purchase referencing an existing `listings/{listingId}` document with `status == 'completed'`. Immutable after creation.
+1. **UserProfile (`/users/{userId}`)**: Private user profile. Only the authenticated owner (`request.auth.uid == userId`) or a verified admin (`isAdmin()`) can `get`; only the owner (`resource.data.uid == request.auth.uid`) or bootstrapped admin (`isBootstrappedAdmin()`) can `list`. `uid` is immutable and must equal `userId`. Creation strictly requires verified email, `username` (`^@[a-z0-9_]{3,24}$`), `age` (`18 <= age <= 120`), `termsAccepted` (`true`), and `termsVersion`, and forbids setting `suspended`. Regular users can never set or modify `suspended`. Admins may update only `['suspended', 'updatedAt']` while passing `isValidUserProfile(incoming())`.
+2. **PublicSeller (`/sellers/{sellerId}`)**: Split public showcase collection containing zero PII (`uid`, `displayName`, optional `photoURL` <= 200000, optional `bio` <= 240, `city`, `state`, `createdAt`, `updatedAt`). Single-document `get` is public; `list` is restricted to `isBootstrappedAdmin()` (checking `resource.data.uid is string`) to prevent public directory scraping while enabling admin moderation. Only the verified owner can create/update their own card; admins can delete suspended/abusive seller cards.
+3. **UsernameClaim (`/usernames/{handle}`)**: Public single-document lookup (`get` only; `list` strictly denied) containing zero PII (`handle`, `uid`, `createdAt`). Only verified users can claim an unclaimed `handle` (`^[a-z0-9_]{3,24}$`) with `uid == request.auth.uid`. Immutable and non-deletable.
+4. **Listing (`/listings/{listingId}`)**: Publicly readable catalog items containing zero PII. Only verified authenticated users can create listings with `sellerId == request.auth.uid` and `status == 'active'`. Regular sellers can edit or mark a listing `'sold'` only while `existing().status == 'active'` (terminal state lock once `'sold'`). Verified admins (`isAdmin()`) have an explicit moderation override (`status` reactivation/moderation or deletion) still strictly wrapped by `isValidListing(incoming())` and immutable field locks (`id`, `sellerId`, `createdAt`).
+5. **ChatThread (`/chats/{chatId}`)**: Strictly private to the 2 participants (`buyerId`, `sellerId`, stored in `participantIds` of length 2) plus verified admin moderation read/delete. Only verified participants can create (as `buyerId`) or update (`lastMessage`, `lastMessageAt`).
+6. **ChatMessage (`/chats/{chatId}/messages/{messageId}`)**: Governed by the Master Gate (`get(/databases/$(database)/documents/chats/$(chatId))`). Only verified members of the parent chat (or verified admins for moderation cleanup) can read or delete; only verified members can create with `senderId == request.auth.uid` and `participantIds == parent.participantIds`. Messages cannot be updated.
+7. **Purchase (`/purchases/{purchaseId}`)**: Only `buyerId`, `sellerId`, or verified admins can read/list purchase records. Only verified `buyerId` can create a purchase referencing an existing `listings/{listingId}` document with `status == 'completed'`. Immutable after creation.
+8. **AdminRole (`/admins/{adminId}`)**: Trusted RBAC collection listing promoted admin UIDs (`uid`, `email`, `grantedBy`, `createdAt`). Regular users can only check their own `get` status (`request.auth.uid == adminId`) and can NEVER create, update, or delete admin roles. Only verified admins (`isAdmin()`) can create or revoke admin documents.
+9. **AdminSettings (`/admin_settings/{settingId}`)**: Singleton platform configuration document (`settingId == 'global'`) containing zero PII (`announcementText`, `announcementEnabled`, `allowNewListings`, `maintenanceMessage`, `updatedBy`, `updatedAt`). Single-document `get` on `'global'` is public so clients can display active announcements; `list` and `delete` are denied; only verified admins (`isAdmin()`) can create or update.
 
 ## 2. Dirty Dozen Adversarial Payloads
-1. Unauthenticated write to `/listings/test1` -> `PERMISSION_DENIED`
-2. Unverified email write (`email_verified: false`) to `/listings/test1` -> `PERMISSION_DENIED`
-3. Spoofed `sellerId` (`sellerId: "victim"`) on `/listings/test2` -> `PERMISSION_DENIED`
-4. Shadow field (`isFeatured: true`) injected into `/listings/test3` -> `PERMISSION_DENIED`
-5. 1MB junk ID (`/listings/<1500 chars>`) -> `PERMISSION_DENIED`
-6. Forged client `createdAt` timestamp (`createdAt != request.time`) -> `PERMISSION_DENIED`
-7. Updating a listing after `status == 'sold'` (terminal state bypass) -> `PERMISSION_DENIED`
-8. Unbounded `customCategories` array (> 12 entries) on `/users/u1` -> `PERMISSION_DENIED`
-9. Non-owner reading `/users/victim` profile -> `PERMISSION_DENIED`
-10. Third-party reading or listing `/chats/chat1` where `uid` not in `participantIds` -> `PERMISSION_DENIED`
-11. Sending a `/chats/chat1/messages/m1` with mismatched `senderId` or without parent membership -> `PERMISSION_DENIED`
-12. Creating `/purchases/p1` referencing a non-existent `listingId` -> `PERMISSION_DENIED`
+1. Unauthenticated write to `/listings/test1`, `/admins/attacker`, or `/admin_settings/global` -> `PERMISSION_DENIED`
+2. Email spoofing attack: user with `token.email == 'admin@quemarket.com'` or `'pagoestar@gmail.com'` but `token.email_verified == false` attempting admin read/write -> `PERMISSION_DENIED`
+3. Privilege escalation: verified non-admin creating `/admins/<ownUid>` or setting `suspended: false` on another user -> `PERMISSION_DENIED`
+4. Regular user injecting `suspended: true` during `/users/u1` creation or updating `suspended` on own `/users/u1` -> `PERMISSION_DENIED`
+5. Non-admin attempting `list` on `/users`, `/sellers`, `/admins`, or `/purchases` of other users -> `PERMISSION_DENIED`
+6. Underage registration (`age: 17`) or `termsAccepted: false` on `/users/u1` -> `PERMISSION_DENIED`
+7. Attempting to mutate locked `username`, `displayName`, `age`, or `termsAccepted` on `/users/u1` or `/sellers/u1` -> `PERMISSION_DENIED`
+8. Shadow field (`isFeatured: true`, `role: 'admin'`) injected into `/listings/test3`, `/users/u1`, `/admins/a1`, or `/admin_settings/global` -> `PERMISSION_DENIED`
+9. 1MB junk ID (`/listings/<1500 chars>`) or oversized `announcementText` (> 280 chars) -> `PERMISSION_DENIED`
+10. Forged client `createdAt` or `updatedAt` timestamp (`!= request.time`) -> `PERMISSION_DENIED`
+11. Non-admin updating a listing after `status == 'sold'` (terminal state bypass) -> `PERMISSION_DENIED`
+12. Third-party non-admin reading `/chats/chat1` or sending message with mismatched `senderId` -> `PERMISSION_DENIED`

@@ -1,4 +1,4 @@
-import { CityLocation, Listing } from '../types/marketplace';
+import { CityLocation } from '../types/marketplace';
 
 export interface VenezuelaState {
   state: string;
@@ -188,14 +188,179 @@ export const DEFAULT_CITY: CityLocation = {
   lng: -67.5958,
 };
 
+export interface MarketplaceSubcategory {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+export interface MarketplaceCategory {
+  id: string;
+  slug: string;
+  name: string;
+  subcategories: readonly MarketplaceSubcategory[];
+}
+
+export const MARKETPLACE_CATEGORIES = [
+  {
+    id: 'vehiculos-y-motos',
+    slug: 'vehiculos-y-motos',
+    name: 'Vehículos y Motos',
+    subcategories: [
+      { id: 'carros', slug: 'carros', name: 'Carros' },
+      { id: 'camionetas', slug: 'camionetas', name: 'Camionetas' },
+      { id: 'motos', slug: 'motos', name: 'Motos' },
+      { id: 'bicimotos-y-e-bikes', slug: 'bicimotos-y-e-bikes', name: 'Bicimotos y E-bikes' },
+      { id: 'repuestos-y-cauchos', slug: 'repuestos-y-cauchos', name: 'Repuestos y Cauchos' },
+    ],
+  },
+  {
+    id: 'telefonos-y-tablets',
+    slug: 'telefonos-y-tablets',
+    name: 'Teléfonos y Tablets',
+    subcategories: [
+      { id: 'smartphones', slug: 'smartphones', name: 'Smartphones' },
+      { id: 'tablets', slug: 'tablets', name: 'Tablets' },
+      { id: 'accesorios-y-cargadores', slug: 'accesorios-y-cargadores', name: 'Accesorios y Cargadores' },
+      { id: 'repuestos-y-pantallas', slug: 'repuestos-y-pantallas', name: 'Repuestos y Pantallas' },
+    ],
+  },
+  {
+    id: 'computacion-y-gaming',
+    slug: 'computacion-y-gaming',
+    name: 'Computación y Gaming',
+    subcategories: [
+      { id: 'laptops', slug: 'laptops', name: 'Laptops' },
+      { id: 'pc-de-escritorio', slug: 'pc-de-escritorio', name: 'PC de escritorio' },
+      { id: 'consolas-y-videojuegos', slug: 'consolas-y-videojuegos', name: 'Consolas y Videojuegos' },
+      { id: 'componentes', slug: 'componentes', name: 'Componentes' },
+      { id: 'redes-e-internet', slug: 'redes-e-internet', name: 'Redes e Internet' },
+    ],
+  },
+  {
+    id: 'energia-y-respaldo',
+    slug: 'energia-y-respaldo',
+    name: 'Energía y Respaldo',
+    subcategories: [
+      { id: 'plantas-electricas', slug: 'plantas-electricas', name: 'Plantas eléctricas' },
+      { id: 'inversores', slug: 'inversores', name: 'Inversores' },
+      { id: 'baterias', slug: 'baterias', name: 'Baterías' },
+      { id: 'paneles-solares', slug: 'paneles-solares', name: 'Paneles solares' },
+      { id: 'protectores-de-voltaje', slug: 'protectores-de-voltaje', name: 'Protectores de voltaje' },
+    ],
+  },
+  {
+    id: 'hogar-y-electrodomesticos',
+    slug: 'hogar-y-electrodomesticos',
+    name: 'Hogar y Electrodomésticos',
+    subcategories: [
+      { id: 'linea-blanca', slug: 'linea-blanca', name: 'Línea blanca' },
+      { id: 'aires-acondicionados', slug: 'aires-acondicionados', name: 'Aires acondicionados' },
+      { id: 'muebles', slug: 'muebles', name: 'Muebles' },
+      { id: 'cocina', slug: 'cocina', name: 'Cocina' },
+      { id: 'decoracion', slug: 'decoracion', name: 'Decoración' },
+    ],
+  },
+  {
+    id: 'moda-y-calzado',
+    slug: 'moda-y-calzado',
+    name: 'Moda y Calzado',
+    subcategories: [
+      { id: 'ropa-de-dama', slug: 'ropa-de-dama', name: 'Ropa de dama' },
+      { id: 'ropa-de-caballero', slug: 'ropa-de-caballero', name: 'Ropa de caballero' },
+      { id: 'ninos-y-bebes', slug: 'ninos-y-bebes', name: 'Niños y Bebés' },
+      { id: 'calzado-y-sneakers', slug: 'calzado-y-sneakers', name: 'Calzado y Sneakers' },
+      { id: 'relojes-y-accesorios', slug: 'relojes-y-accesorios', name: 'Relojes y Accesorios' },
+    ],
+  },
+  {
+    id: 'salud-y-belleza',
+    slug: 'salud-y-belleza',
+    name: 'Salud y Belleza',
+    subcategories: [
+      { id: 'maquillaje', slug: 'maquillaje', name: 'Maquillaje' },
+      { id: 'cuidado-de-la-piel', slug: 'cuidado-de-la-piel', name: 'Cuidado de la piel' },
+      { id: 'barberia-y-peluqueria', slug: 'barberia-y-peluqueria', name: 'Barbería y Peluquería' },
+      { id: 'suplementos', slug: 'suplementos', name: 'Suplementos' },
+      { id: 'equipos-medicos', slug: 'equipos-medicos', name: 'Equipos médicos' },
+    ],
+  },
+  {
+    id: 'inmuebles',
+    slug: 'inmuebles',
+    name: 'Inmuebles',
+    subcategories: [
+      { id: 'alquiler-residencial', slug: 'alquiler-residencial', name: 'Alquiler residencial' },
+      { id: 'venta-de-casas-y-apartamentos', slug: 'venta-de-casas-y-apartamentos', name: 'Venta de casas y apartamentos' },
+      { id: 'locales-comerciales', slug: 'locales-comerciales', name: 'Locales comerciales' },
+      { id: 'terrenos', slug: 'terrenos', name: 'Terrenos' },
+      { id: 'habitaciones', slug: 'habitaciones', name: 'Habitaciones' },
+    ],
+  },
+  {
+    id: 'herramientas-e-industria',
+    slug: 'herramientas-e-industria',
+    name: 'Herramientas e Industria',
+    subcategories: [
+      { id: 'herramientas-electricas-y-manuales', slug: 'herramientas-electricas-y-manuales', name: 'Herramientas eléctricas y manuales' },
+      { id: 'equipos-de-taller', slug: 'equipos-de-taller', name: 'Equipos de taller' },
+      { id: 'construccion', slug: 'construccion', name: 'Construcción' },
+      { id: 'maquinaria-agricola', slug: 'maquinaria-agricola', name: 'Maquinaria agrícola' },
+    ],
+  },
+  {
+    id: 'deportes-y-aire-libre',
+    slug: 'deportes-y-aire-libre',
+    name: 'Deportes y Aire Libre',
+    subcategories: [
+      { id: 'bicicletas', slug: 'bicicletas', name: 'Bicicletas' },
+      { id: 'gimnasio-y-pesas', slug: 'gimnasio-y-pesas', name: 'Gimnasio y pesas' },
+      { id: 'camping-y-pesca', slug: 'camping-y-pesca', name: 'Camping y Pesca' },
+      { id: 'ropa-deportiva', slug: 'ropa-deportiva', name: 'Ropa deportiva' },
+    ],
+  },
+  {
+    id: 'mascotas',
+    slug: 'mascotas',
+    name: 'Mascotas',
+    subcategories: [
+      { id: 'alimentos', slug: 'alimentos', name: 'Alimentos' },
+      { id: 'accesorios', slug: 'accesorios', name: 'Accesorios' },
+      { id: 'camas-y-jaulas', slug: 'camas-y-jaulas', name: 'Camas y jaulas' },
+      { id: 'higiene-y-salud', slug: 'higiene-y-salud', name: 'Higiene y salud' },
+    ],
+  },
+  {
+    id: 'servicios-y-oficios',
+    slug: 'servicios-y-oficios',
+    name: 'Servicios y Oficios',
+    subcategories: [
+      { id: 'mecanica-y-latoneria', slug: 'mecanica-y-latoneria', name: 'Mecánica y latonería' },
+      { id: 'refrigeracion', slug: 'refrigeracion', name: 'Refrigeración' },
+      { id: 'reparacion-de-celulares-y-pc', slug: 'reparacion-de-celulares-y-pc', name: 'Reparación de celulares y PC' },
+      { id: 'fletes-y-mudanzas', slug: 'fletes-y-mudanzas', name: 'Fletes y mudanzas' },
+      { id: 'diseno-y-web', slug: 'diseno-y-web', name: 'Diseño y Web' },
+    ],
+  },
+] as const satisfies readonly MarketplaceCategory[];
+
 export const BASE_CATEGORIES = [
-  'Tecnología',
-  'Hogar',
-  'Vehículos',
-  'Moda',
-  'Deportes',
-  'Servicios',
+  'Vehículos y Motos',
+  'Teléfonos y Tablets',
+  'Computación y Gaming',
+  'Energía y Respaldo',
+  'Hogar y Electrodomésticos',
+  'Moda y Calzado',
+  'Salud y Belleza',
+  'Inmuebles',
+  'Herramientas e Industria',
+  'Deportes y Aire Libre',
+  'Mascotas',
+  'Servicios y Oficios',
 ] as const;
+
+export const SUBCATEGORIES_BY_CATEGORY: Record<string, readonly MarketplaceSubcategory[]> =
+  Object.fromEntries(MARKETPLACE_CATEGORIES.map((cat) => [cat.name, cat.subcategories]));
 
 export function getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (v: number) => (v * Math.PI) / 180;
@@ -220,124 +385,4 @@ export function findNearestVenezuelanCity(lat: number, lng: number): CityLocatio
     }
   }
   return nearest;
-}
-
-export function buildSeedListings(userCity: CityLocation): Listing[] {
-  const now = Date.now();
-  return [
-    {
-      id: 'seed_iphone_15_pro',
-      sellerId: 'seller_carlos_mcy',
-      sellerName: 'Carlos Mendoza',
-      title: 'iPhone 15 Pro 256GB Titanio',
-      description:
-        'Liberado de fábrica, batería al 96%, con caja original y cable USB-C. Entrega personal en centro comercial seguro.',
-      priceUsd: 790,
-      category: 'Tecnología',
-      condition: 'Como nuevo',
-      state: userCity.state,
-      city: userCity.city,
-      lat: userCity.lat + 0.014,
-      lng: userCity.lng - 0.012,
-      imageUrl: '/src/assets/images/product_iphone_pro_1795464745375.jpg',
-      status: 'active',
-      createdAtMs: now - 1000 * 60 * 35,
-      source: 'seed',
-    },
-    {
-      id: 'seed_cafetera_aura',
-      sellerId: 'seller_valeria_mcy',
-      sellerName: 'Valeria Rojas',
-      title: 'Cafetera Espresso Acero 15 Bar',
-      description:
-        'Espumador de leche profesional y portafiltro doble. Ideal para casa u oficina, poquísimo uso.',
-      priceUsd: 165,
-      category: 'Hogar',
-      condition: 'Nuevo',
-      state: userCity.state,
-      city: userCity.city,
-      lat: userCity.lat - 0.022,
-      lng: userCity.lng + 0.018,
-      imageUrl: '/src/assets/images/product_cafetera_espresso_1795464746423.jpg',
-      status: 'active',
-      createdAtMs: now - 1000 * 60 * 90,
-      source: 'seed',
-    },
-    {
-      id: 'seed_casco_moto',
-      sellerId: 'seller_andres_val',
-      sellerName: 'Andrés Silva',
-      title: 'Casco Integral Matte DOT Talla M',
-      description:
-        'Visor polarizado anti-rayas, ventilación superior y broche micrométrico. Totalmente nuevo en su funda.',
-      priceUsd: 95,
-      category: 'Vehículos',
-      condition: 'Nuevo',
-      state: userCity.state === 'Carabobo' ? 'Aragua' : 'Carabobo',
-      city: userCity.state === 'Carabobo' ? 'Maracay' : 'Valencia',
-      lat: userCity.state === 'Carabobo' ? 10.2469 : 10.162,
-      lng: userCity.state === 'Carabobo' ? -67.5958 : -67.9912,
-      imageUrl: '/src/assets/images/product_moto_casco_1795464745697.jpg',
-      status: 'active',
-      createdAtMs: now - 1000 * 60 * 180,
-      source: 'seed',
-    },
-    {
-      id: 'seed_sneakers_sand',
-      sellerId: 'seller_sofia_ccs',
-      sellerName: 'Sofía Martínez',
-      title: 'Zapatillas Cuero & Gamuza Talla 41',
-      description:
-        'Color blanco hueso con detalles en arena. Súper cómodas, suela vulcanizada original sin detalles.',
-      priceUsd: 78,
-      category: 'Moda',
-      condition: 'Nuevo',
-      state: userCity.state,
-      city: userCity.city,
-      lat: userCity.lat + 0.032,
-      lng: userCity.lng + 0.026,
-      imageUrl: '/src/assets/images/product_sneakers_urban_1795464747268.jpg',
-      status: 'active',
-      createdAtMs: now - 1000 * 60 * 240,
-      source: 'seed',
-    },
-    {
-      id: 'seed_macbook_air_m2',
-      sellerId: 'seller_diego_ccs',
-      sellerName: 'Diego Hernández',
-      title: 'MacBook Air M2 13" 8GB / 256GB',
-      description:
-        'Plateada impecable, 42 ciclos de batería. Incluye cargador MagSafe original y funda minimalista.',
-      priceUsd: 860,
-      category: 'Tecnología',
-      condition: 'Como nuevo',
-      state: userCity.state === 'Distrito Capital' ? 'Miranda' : 'Distrito Capital',
-      city: userCity.state === 'Distrito Capital' ? 'Chacao' : 'Caracas',
-      lat: userCity.state === 'Distrito Capital' ? 10.4958 : 10.4806,
-      lng: userCity.state === 'Distrito Capital' ? -66.8536 : -66.9036,
-      imageUrl: '/src/assets/images/product_macbook_air_1795464747108.jpg',
-      status: 'active',
-      createdAtMs: now - 1000 * 60 * 320,
-      source: 'seed',
-    },
-    {
-      id: 'seed_bici_mtb',
-      sellerId: 'seller_luis_lar',
-      sellerName: 'Luis Cabrera',
-      title: 'Bicicleta MTB Rin 29 Frenos Hidráulicos',
-      description:
-        'Cuadro de aluminio liviano talla M, transmisión 1x12 y cauchos Maxxis al 90%. Lista para rodar.',
-      priceUsd: 440,
-      category: 'Deportes',
-      condition: 'Usado',
-      state: userCity.state,
-      city: userCity.city,
-      lat: userCity.lat - 0.045,
-      lng: userCity.lng - 0.038,
-      imageUrl: '/src/assets/images/product_bicicleta_mtb_1795464747978.jpg',
-      status: 'active',
-      createdAtMs: now - 1000 * 60 * 480,
-      source: 'seed',
-    },
-  ];
 }

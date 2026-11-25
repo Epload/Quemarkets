@@ -145,22 +145,18 @@ function FlowLane({
 export function BackgroundItemFlow() {
   return (
     <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
-      {/* Tilted flowing product lanes simulating a live video reel */}
-      <div className="absolute -inset-x-16 -top-10 flex flex-col gap-4 -rotate-6 scale-105 opacity-75">
-        <FlowLane items={LANE_ONE} direction="left" durationSec={30} />
-        <FlowLane items={LANE_TWO} direction="right" durationSec={34} />
-        <FlowLane items={LANE_THREE} direction="left" durationSec={26} />
-        <FlowLane items={LANE_ONE} direction="right" durationSec={32} />
+      {/* Tilted flowing product lanes covering the full viewport */}
+      <div className="absolute -inset-x-20 -inset-y-12 flex flex-col justify-center gap-4 -rotate-6 scale-105 opacity-95">
+        <FlowLane items={LANE_ONE} direction="left" durationSec={24} />
+        <FlowLane items={LANE_TWO} direction="right" durationSec={28} />
+        <FlowLane items={LANE_THREE} direction="left" durationSec={22} />
+        <FlowLane items={LANE_ONE} direction="right" durationSec={26} />
+        <FlowLane items={LANE_TWO} direction="left" durationSec={25} />
+        <FlowLane items={LANE_THREE} direction="right" durationSec={29} />
       </div>
 
-      {/* Luminous lavender-to-white atmospheric frosted veil for crisp text legibility */}
-      <div
-        className="absolute inset-0 backdrop-blur-[2.5px]"
-        style={{
-          background:
-            'linear-gradient(180deg, rgba(237,227,249,0.74) 0%, rgba(246,241,252,0.84) 44%, rgba(255,255,255,0.97) 78%, #FFFFFF 100%)',
-        }}
-      />
+      {/* Subtle dark plum-charcoal veil over the animated reel for richer depth and contrast */}
+      <div className="absolute inset-0 bg-[#141118]/42 bg-gradient-to-b from-[#141118]/30 via-[#1B1622]/38 to-[#141118]/55" />
     </div>
   );
 }

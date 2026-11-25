@@ -1,0 +1,25 @@
+{
+  "name": "Quemarket — Marketplace Venezuela",
+  "short_name": "Quemarket",
+  "description": "Marketplace móvil directo para comprar, vender y chatear en Venezuela.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAFAFC",
+  "theme_color": "#362B3D",
+  "lang": "es-VE",
+  "icons": [
+    {
+      "src": "/assets/quemarket-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/quemarket-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

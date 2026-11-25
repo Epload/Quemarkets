@@ -7,6 +7,7 @@ import { BottomSheet } from './BottomSheet';
 interface SearchSheetProps {
   open: boolean;
   onClose: () => void;
+  onApply?: () => void;
   searchQuery: string;
   onSearchQueryChange: (val: string) => void;
   selectedState: string;
@@ -22,17 +23,10 @@ interface SearchSheetProps {
   onReset: () => void;
 }
 
-const PROXIMITY_OPTIONS: { id: ProximityOption; label: string }[] = [
-  { id: '5km', label: 'A 5 km' },
-  { id: '15km', label: 'A 15 km' },
-  { id: '50km', label: 'A 50 km' },
-  { id: 'state', label: 'Todo el estado' },
-  { id: 'country', label: 'Toda Venezuela' },
-];
-
 export function SearchSheet({
   open,
   onClose,
+  onApply,
   searchQuery,
   onSearchQueryChange,
   selectedState,
@@ -54,6 +48,7 @@ export function SearchSheet({
     <BottomSheet
       open={open}
       onClose={onClose}
+      aboveDock
       title="Buscar y filtrar"
       subtitle="Elige estado, categoría o proximidad"
     >
@@ -70,30 +65,87 @@ export function SearchSheet({
           />
         </div>
 
-        {/* Proximity filter */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500">
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>Proximidad</span>
+        {/* Proximity filter with interactive kilometer slider */}
+        <div className="space-y-2.5 bg-zinc-50/90 border border-zinc-200/75 rounded-2xl p-3.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-[#6B4E8E]" />
+              <span>Radio de distancia</span>
+            </div>
+            <span className="px-2.5 py-1 rounded-xl bg-[#362B3D] text-white text-xs font-bold tabular-nums">
+              {typeof proximity === 'number'
+                ? `Hasta ${proximity} km`
+                : proximity === 'state'
+                  ? 'Estado'
+                  : 'Venezuela'}
+            </span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {PROXIMITY_OPTIONS.map((opt) => {
-              const active = proximity === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => onSelectProximity(opt.id)}
-                  className={`min-h-[38px] px-3.5 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap ${
-                    active
-                      ? 'bg-[#362B3D] text-white'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
+
+          <div className="space-y-1.5 pt-1">
+            <input
+              type="range"
+              min={1}
+              max={205}
+              step={1}
+              aria-label="Distancia en kilómetros"
+              value={
+                typeof proximity === 'number'
+                  ? Math.min(200, Math.max(1, proximity))
+                  : 205
+              }
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (val > 200) {
+                  onSelectProximity('country');
+                } else {
+                  onSelectProximity(val);
+                }
+              }}
+              className="w-full h-2 rounded-lg bg-zinc-200 accent-[#362B3D] cursor-pointer"
+            />
+            <div className="flex items-center justify-between text-[11px] font-medium text-zinc-400 tabular-nums px-0.5">
+              <span>1 km</span>
+              <span>50 km</span>
+              <span>100 km</span>
+              <span>150 km</span>
+              <span>200 km+</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => onSelectProximity(typeof proximity === 'number' ? proximity : 25)}
+              className={`flex-1 h-8 px-2.5 rounded-xl text-[11px] font-semibold transition-colors ${
+                typeof proximity === 'number'
+                  ? 'bg-[#362B3D] text-white'
+                  : 'bg-white border border-zinc-200/80 text-zinc-600 hover:bg-zinc-100'
+              }`}
+            >
+              {typeof proximity === 'number' ? `Por km (${proximity} km)` : 'Por kilómetros'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectProximity('state')}
+              className={`flex-1 h-8 px-2.5 rounded-xl text-[11px] font-semibold transition-colors ${
+                proximity === 'state'
+                  ? 'bg-[#362B3D] text-white'
+                  : 'bg-white border border-zinc-200/80 text-zinc-600 hover:bg-zinc-100'
+              }`}
+            >
+              Estado
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectProximity('country')}
+              className={`flex-1 h-8 px-2.5 rounded-xl text-[11px] font-semibold transition-colors ${
+                proximity === 'country'
+                  ? 'bg-[#362B3D] text-white'
+                  : 'bg-white border border-zinc-200/80 text-zinc-600 hover:bg-zinc-100'
+              }`}
+            >
+              Venezuela
+            </button>
           </div>
         </div>
 
@@ -118,7 +170,7 @@ export function SearchSheet({
               aria-label="Seleccionar estado"
               className="h-11 px-3.5 rounded-2xl bg-zinc-100 text-sm font-medium text-[#141118] focus:outline-none focus:ring-2 focus:ring-[#362B3D]/25"
             >
-              <option value="Todos">Toda Venezuela</option>
+              <option value="Todos">Venezuela</option>
               {VENEZUELA_STATES.map((s) => (
                 <option key={s.state} value={s.state}>
                   {s.state}
@@ -146,36 +198,19 @@ export function SearchSheet({
         {/* Categories */}
         <div className="space-y-2">
           <span className="block text-xs font-semibold text-zinc-500">Categoría</span>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => onSelectCategory('Todas')}
-              className={`min-h-[38px] px-3.5 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap ${
-                selectedCategory === 'Todas'
-                  ? 'bg-[#362B3D] text-white'
-                  : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70'
-              }`}
-            >
-              Todas
-            </button>
-            {allCategories.map((cat) => {
-              const active = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => onSelectCategory(cat)}
-                  className={`min-h-[38px] px-3.5 rounded-xl text-xs font-semibold transition-colors whitespace-nowrap ${
-                    active
-                      ? 'bg-[#362B3D] text-white'
-                      : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200/70'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
+          <select
+            value={selectedCategory}
+            onChange={(e) => onSelectCategory(e.target.value)}
+            aria-label="Seleccionar categoría"
+            className="w-full h-11 px-3.5 rounded-2xl bg-zinc-100 text-sm font-medium text-[#141118] focus:outline-none focus:ring-2 focus:ring-[#362B3D]/25"
+          >
+            <option value="Todas">Todas las categorías</option>
+            {allCategories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex items-center gap-2.5 pt-2">
@@ -190,7 +225,7 @@ export function SearchSheet({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={onApply ?? onClose}
             className="flex-1 h-12 rounded-2xl bg-[#362B3D] hover:bg-[#2A2130] text-white text-sm font-semibold active:scale-[0.98] transition-all tabular-nums"
           >
             Ver {resultCount} {resultCount === 1 ? 'resultado' : 'resultados'}

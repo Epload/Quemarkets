@@ -2,7 +2,7 @@
   "entities": {
     "UserProfile": {
       "title": "UserProfile",
-      "description": "Perfil privado del usuario con su ciudad, estado y categorías personalizadas.",
+      "description": "Perfil privado del usuario con su @usuario inmutable, edad verificada, términos aceptados, ubicación y categorías personalizadas.",
       "type": "object",
       "properties": {
         "uid": {
@@ -15,9 +15,30 @@
           "minLength": 1,
           "maxLength": 80
         },
+        "username": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 25,
+          "pattern": "^@[a-z0-9_]{3,24}$"
+        },
+        "age": {
+          "type": "integer"
+        },
+        "termsAccepted": {
+          "type": "boolean"
+        },
+        "termsVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
         "photoURL": {
           "type": "string",
-          "maxLength": 500
+          "maxLength": 200000
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 240
         },
         "city": {
           "type": "string",
@@ -32,12 +53,170 @@
         "customCategories": {
           "type": "array"
         },
+        "suspended": {
+          "type": "boolean",
+          "description": "Indicador de suspensión de cuenta gestionado únicamente por administración."
+        },
+        "identityVerified": {
+          "type": "boolean",
+          "description": "Indicador de verificación de identidad (selfie + cédula) aprobado únicamente por administración."
+        },
         "updatedAt": {
           "type": "string",
           "format": "date-time"
         }
       },
-      "required": ["uid", "displayName", "city", "state", "customCategories", "updatedAt"]
+      "required": [
+        "uid",
+        "displayName",
+        "username",
+        "age",
+        "termsAccepted",
+        "termsVersion",
+        "city",
+        "state",
+        "customCategories",
+        "updatedAt"
+      ]
+    },
+    "PublicSeller": {
+      "title": "PublicSeller",
+      "description": "Perfil público del vendedor sin PII (avatar, @usuario, ciudad/estado y descripción) visible al abrir una publicación.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 200000
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "city": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "state": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "identityVerified": {
+          "type": "boolean",
+          "description": "Indicador público de identidad verificada gestionado únicamente por administración."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "city", "state", "createdAt", "updatedAt"]
+    },
+    "IdentityVerification": {
+      "title": "IdentityVerification",
+      "description": "Solicitud privada de verificación de identidad (selfie y foto de cédula) accesible únicamente para el usuario dueño y administradores.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "city": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "state": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "selfieUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 220000
+        },
+        "idCardUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 220000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"]
+        },
+        "rejectionReason": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "reviewedBy": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "city",
+        "state",
+        "selfieUrl",
+        "idCardUrl",
+        "status",
+        "submittedAt",
+        "updatedAt"
+      ]
+    },
+    "UsernameClaim": {
+      "title": "UsernameClaim",
+      "description": "Reserva inmutable y única de identificador público de vendedor (@usuario), sin datos personales.",
+      "type": "object",
+      "properties": {
+        "handle": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 24,
+          "pattern": "^[a-z0-9_]{3,24}$"
+        },
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["handle", "uid", "createdAt"]
     },
     "Listing": {
       "title": "Listing",
@@ -76,6 +255,11 @@
           "minLength": 1,
           "maxLength": 50
         },
+        "subcategory": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
         "condition": {
           "type": "string",
           "enum": ["Nuevo", "Como nuevo", "Usado"]
@@ -101,9 +285,22 @@
           "minLength": 1,
           "maxLength": 350000
         },
+        "imageUrls": {
+          "type": "array",
+          "description": "Hasta 5 imágenes de la publicación (la primera coincide con la portada)."
+        },
+        "vehicleDetails": {
+          "type": "object",
+          "description": "Ficha técnica opcional para publicaciones de Vehículos y Motos."
+        },
+        "realEstateDetails": {
+          "type": "object",
+          "description": "Especificaciones opcionales para publicaciones de Inmuebles."
+        },
         "status": {
           "type": "string",
-          "enum": ["active", "sold"]
+          "enum": ["pending", "active", "sold", "rejected"],
+          "description": "Estado de moderación y disponibilidad: pending (en revisión / auto-aprobación a los 30 min), active, sold o rejected."
         },
         "createdAt": {
           "type": "string",
@@ -214,7 +411,7 @@
     },
     "ChatMessage": {
       "title": "ChatMessage",
-      "description": "Mensaje individual dentro de un chat comprador-vendedor.",
+      "description": "Mensaje individual (texto, imagen o nota de voz) dentro de un chat comprador-vendedor.",
       "type": "object",
       "properties": {
         "id": {
@@ -232,8 +429,22 @@
         },
         "text": {
           "type": "string",
-          "minLength": 1,
           "maxLength": 500
+        },
+        "type": {
+          "type": "string",
+          "enum": ["text", "image", "audio"]
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 350000
+        },
+        "audioUrl": {
+          "type": "string",
+          "maxLength": 350000
+        },
+        "audioDurationSec": {
+          "type": "number"
         },
         "createdAt": {
           "type": "string",
@@ -317,12 +528,85 @@
         "status",
         "createdAt"
       ]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Registro confiable de usuarios con privilegios de administración en Quemarket.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "grantedBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "grantedBy", "createdAt"]
+    },
+    "AdminSettings": {
+      "title": "AdminSettings",
+      "description": "Configuración global del marketplace gestionada por administradores (anuncios y control de publicaciones).",
+      "type": "object",
+      "properties": {
+        "announcementEnabled": {
+          "type": "boolean"
+        },
+        "announcementText": {
+          "type": "string",
+          "maxLength": 280
+        },
+        "allowNewListings": {
+          "type": "boolean"
+        },
+        "maintenanceMessage": {
+          "type": "string",
+          "maxLength": 280
+        },
+        "updatedBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "announcementEnabled",
+        "announcementText",
+        "allowNewListings",
+        "maintenanceMessage",
+        "updatedBy",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserProfile" },
-      "description": "Perfil y categorías personalizadas del usuario."
+      "description": "Perfil privado y preferencias del usuario."
+    },
+    "/sellers/{sellerId}": {
+      "schema": { "$ref": "#/entities/PublicSeller" },
+      "description": "Perfil público sin PII del vendedor visible desde sus publicaciones."
+    },
+    "/usernames/{handle}": {
+      "schema": { "$ref": "#/entities/UsernameClaim" },
+      "description": "Índice de unicidad e inmutabilidad de @usuario para vendedores."
     },
     "/listings/{listingId}": {
       "schema": { "$ref": "#/entities/Listing" },
@@ -339,6 +623,18 @@
     "/purchases/{purchaseId}": {
       "schema": { "$ref": "#/entities/Purchase" },
       "description": "Historial de compras entre comprador y vendedor."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Lista confiable de administradores autorizados."
+    },
+    "/admin_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/AdminSettings" },
+      "description": "Configuración global del marketplace (documento singleton global)."
+    },
+    "/identity_verifications/{userId}": {
+      "schema": { "$ref": "#/entities/IdentityVerification" },
+      "description": "Solicitudes privadas de verificación de identidad (selfie y cédula) para revisión exclusiva de administración."
     }
   }
 }

@@ -13,6 +13,21 @@
     color: #141118;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: contain;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+
+  button,
+  a,
+  nav {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   h1, h2, h3, h4, .font-display {
@@ -33,6 +48,28 @@
   scrollbar-width: none;
 }
 
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 .pb-safe {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
 }
+
+.dock-upward-corners {
+  -webkit-mask-image:
+    radial-gradient(circle 24px at 24px 0, transparent 23.5px, #000 24px),
+    radial-gradient(circle 24px at 0 0, transparent 23.5px, #000 24px),
+    linear-gradient(#000, #000);
+  -webkit-mask-position: top left, top right, 0 24px;
+  -webkit-mask-size: 24px 24px, 24px 24px, 100% calc(100% - 24px);
+  -webkit-mask-repeat: no-repeat;
+  mask-image:
+    radial-gradient(circle 24px at 24px 0, transparent 23.5px, #000 24px),
+    radial-gradient(circle 24px at 0 0, transparent 23.5px, #000 24px),
+    linear-gradient(#000, #000);
+  mask-position: top left, top right, 0 24px;
+  mask-size: 24px 24px, 24px 24px, 100% calc(100% - 24px);
+  mask-repeat: no-repeat;
+}
+

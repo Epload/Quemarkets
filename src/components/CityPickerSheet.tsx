@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Check, ChevronRight, MapPin, Navigation } from 'lucide-react';
 import { ALL_CITIES, VENEZUELA_STATES, findNearestVenezuelanCity } from '../data/venezuela';
+import { requestAppPermission } from '../lib/nativePermissions';
 import { CityLocation } from '../types/marketplace';
 import { BottomSheet } from './BottomSheet';
 
@@ -23,26 +24,23 @@ export function CityPickerSheet({
   const [locating, setLocating] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
-  const handleUseGps = () => {
-    if (!('geolocation' in navigator)) {
-      setGpsError('Tu dispositivo no soporta geolocalización.');
-      return;
-    }
+  const handleUseGps = async () => {
     setLocating(true);
     setGpsError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const nearest = findNearestVenezuelanCity(pos.coords.latitude, pos.coords.longitude);
-        setLocating(false);
+    try {
+      const res = await requestAppPermission('location');
+      if (res.coords) {
+        const nearest = findNearestVenezuelanCity(res.coords.lat, res.coords.lng);
         onSelectCity(nearest);
         onClose();
-      },
-      () => {
-        setLocating(false);
-        setGpsError('No pudimos acceder a tu ubicación. Selecciona tu ciudad abajo.');
-      },
-      { timeout: 6000 }
-    );
+      } else {
+        setGpsError(
+          res.message || 'No pudimos acceder a tu ubicación. Selecciona tu ciudad abajo.'
+        );
+      }
+    } finally {
+      setLocating(false);
+    }
   };
 
   const filteredCities = queryText.trim()

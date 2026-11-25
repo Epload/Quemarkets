@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Package } from 'lucide-react';
+import { Camera, Package } from 'lucide-react';
 import { Listing } from '../types/marketplace';
 
 interface ProductCardProps {
@@ -10,6 +10,8 @@ interface ProductCardProps {
 
 export function ProductCard({ listing, distanceKm, onSelect }: ProductCardProps) {
   const [imgError, setImgError] = useState(false);
+  const photoCount = listing.imageUrls?.length || (listing.imageUrl ? 1 : 0);
+  const isSold = listing.status === 'sold';
 
   return (
     <button
@@ -24,7 +26,9 @@ export function ProductCard({ listing, distanceKm, onSelect }: ProductCardProps)
             alt={listing.title}
             referrerPolicy="no-referrer"
             onError={() => setImgError(true)}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03] ${
+              isSold ? 'opacity-75 saturate-75' : ''
+            }`}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200/70 text-zinc-400 p-4 text-center">
@@ -32,21 +36,39 @@ export function ProductCard({ listing, distanceKm, onSelect }: ProductCardProps)
             <span className="text-xs font-medium text-zinc-500 line-clamp-1">{listing.title}</span>
           </div>
         )}
+        {isSold && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="font-display text-lg sm:text-xl font-black tracking-[0.22em] uppercase text-red-500 drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+              Vendido
+            </span>
+          </div>
+        )}
+        {photoCount > 1 && (
+          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/55 backdrop-blur-sm text-white text-[10px] font-semibold inline-flex items-center gap-1 tabular-nums">
+            <Camera className="w-3 h-3" />
+            {photoCount}
+          </span>
+        )}
       </div>
 
-      <div className="p-3.5 space-y-1.5">
-        <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-400 truncate">
-          <span>{listing.category}</span>
-          <span aria-hidden="true">·</span>
-          <span>{listing.condition}</span>
+      <div className="p-3.5 space-y-1">
+        <div className="flex items-center justify-between gap-1.5">
+          <h3 className="font-display text-[15px] font-semibold text-[#141118] leading-snug line-clamp-1">
+            {listing.title}
+          </h3>
+          {isSold && (
+            <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide shrink-0">
+              Vendido
+            </span>
+          )}
         </div>
 
-        <h3 className="font-display text-[15px] font-semibold text-[#141118] leading-snug line-clamp-1">
-          {listing.title}
-        </h3>
-
         <div className="flex items-baseline justify-between gap-2 pt-0.5">
-          <span className="font-display text-[17px] font-bold text-[#141118] tabular-nums">
+          <span
+            className={`font-display text-[17px] font-bold tabular-nums ${
+              isSold ? 'text-zinc-400 line-through' : 'text-[#141118]'
+            }`}
+          >
             ${listing.priceUsd.toLocaleString('es-VE')}
           </span>
           <span className="text-[11px] text-zinc-500 truncate tabular-nums">

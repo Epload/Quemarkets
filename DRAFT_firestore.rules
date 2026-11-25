@@ -25,18 +25,105 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email_verified == true;
     }
 
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'pagoestar@gmail.com'
+        || request.auth.token.email == 'admin@quemarket.com'
+      );
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin()
+        || (isVerifiedUser() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
     function isValidUserProfile(data) {
       return data.keys().hasAll(['uid', 'displayName', 'city', 'state', 'customCategories', 'updatedAt'])
-        && data.keys().hasOnly(['uid', 'displayName', 'photoURL', 'city', 'state', 'customCategories', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'username', 'age', 'termsAccepted', 'termsVersion', 'photoURL', 'bio', 'city', 'state', 'customCategories', 'suspended', 'identityVerified', 'updatedAt'])
         && isValidId(data.uid)
-        && data.uid == request.auth.uid
         && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
-        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && (!('username' in data) || (data.username is string && data.username.size() >= 4 && data.username.size() <= 25 && data.username.matches('^@[a-z0-9_]{3,24}$')))
+        && (!('age' in data) || (data.age is int && data.age >= 18 && data.age <= 120))
+        && (!('termsAccepted' in data) || (data.termsAccepted is bool && data.termsAccepted == true))
+        && (!('termsVersion' in data) || (data.termsVersion is string && data.termsVersion.size() >= 1 && data.termsVersion.size() <= 40))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 200000))
+        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 240))
         && data.city is string && data.city.size() >= 1 && data.city.size() <= 60
         && data.state is string && data.state.size() >= 1 && data.state.size() <= 60
         && data.customCategories is list && data.customCategories.size() <= 12
         && (data.customCategories.size() == 0 || (data.customCategories[0] is string && data.customCategories[0].size() <= 50))
+        && (!('suspended' in data) || data.suspended is bool)
+        && (!('identityVerified' in data) || data.identityVerified is bool)
         && data.updatedAt is timestamp;
+    }
+
+    function isValidPublicSeller(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'city', 'state', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'photoURL', 'bio', 'city', 'state', 'identityVerified', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 200000))
+        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 240))
+        && data.city is string && data.city.size() >= 1 && data.city.size() <= 60
+        && data.state is string && data.state.size() >= 1 && data.state.size() <= 60
+        && (!('identityVerified' in data) || data.identityVerified is bool)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidIdentityVerification(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'city', 'state', 'selfieUrl', 'idCardUrl', 'status', 'submittedAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'city', 'state', 'selfieUrl', 'idCardUrl', 'status', 'rejectionReason', 'reviewedBy', 'submittedAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80
+        && data.city is string && data.city.size() >= 1 && data.city.size() <= 60
+        && data.state is string && data.state.size() >= 1 && data.state.size() <= 60
+        && data.selfieUrl is string && data.selfieUrl.size() >= 1 && data.selfieUrl.size() <= 220000
+        && data.idCardUrl is string && data.idCardUrl.size() >= 1 && data.idCardUrl.size() <= 220000
+        && data.status in ['pending', 'approved', 'rejected']
+        && (!('rejectionReason' in data) || (data.rejectionReason is string && data.rejectionReason.size() <= 240))
+        && (!('reviewedBy' in data) || (data.reviewedBy is string && data.reviewedBy.size() <= 120))
+        && data.submittedAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUsernameClaim(data) {
+      return data.keys().hasAll(['handle', 'uid', 'createdAt'])
+        && data.keys().hasOnly(['handle', 'uid', 'createdAt'])
+        && data.handle is string && data.handle.size() >= 3 && data.handle.size() <= 24 && data.handle.matches('^[a-z0-9_]{3,24}$')
+        && isValidId(data.uid)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidListingImageItem(list, idx) {
+      return list.size() <= idx || (list[idx] is string && list[idx].size() >= 1 && list[idx].size() <= 165000);
+    }
+
+    function isValidVehicleDetails(v) {
+      return v is map
+        && v.keys().hasOnly(['brand', 'model', 'year', 'mileageKm', 'transmission', 'fuel', 'documents'])
+        && (!('brand' in v) || (v.brand is string && v.brand.size() <= 50))
+        && (!('model' in v) || (v.model is string && v.model.size() <= 60))
+        && (!('year' in v) || ((v.year is int || v.year is float) && v.year >= 1950 && v.year <= 2030))
+        && (!('mileageKm' in v) || ((v.mileageKm is int || v.mileageKm is float) && v.mileageKm >= 0 && v.mileageKm <= 2000000))
+        && (!('transmission' in v) || v.transmission in ['Automática', 'Sincrónica', 'CVT', 'No aplica'])
+        && (!('fuel' in v) || v.fuel in ['Gasolina', 'Diésel', 'Eléctrico', 'Híbrido'])
+        && (!('documents' in v) || (v.documents is string && v.documents.size() <= 80));
+    }
+
+    function isValidRealEstateDetails(r) {
+      return r is map
+        && r.keys().hasOnly(['areaSqm', 'bedrooms', 'bathrooms', 'parkingSpaces', 'amenities', 'legalStatus'])
+        && (!('areaSqm' in r) || ((r.areaSqm is int || r.areaSqm is float) && r.areaSqm > 0 && r.areaSqm <= 1000000))
+        && (!('bedrooms' in r) || ((r.bedrooms is int || r.bedrooms is float) && r.bedrooms >= 0 && r.bedrooms <= 50))
+        && (!('bathrooms' in r) || ((r.bathrooms is int || r.bathrooms is float) && r.bathrooms >= 0 && r.bathrooms <= 50))
+        && (!('parkingSpaces' in r) || ((r.parkingSpaces is int || r.parkingSpaces is float) && r.parkingSpaces >= 0 && r.parkingSpaces <= 50))
+        && (!('amenities' in r) || (
+          r.amenities is list
+          && r.amenities.size() <= 8
+          && (r.amenities.size() == 0 || (r.amenities[0] is string && r.amenities[0].size() <= 40))
+        ))
+        && (!('legalStatus' in r) || (r.legalStatus is string && r.legalStatus.size() <= 80));
     }
 
     function isValidListing(data) {
@@ -47,8 +134,9 @@ service cloud.firestore {
         ])
         && data.keys().hasOnly([
           'id', 'sellerId', 'sellerName', 'title', 'description',
-          'priceUsd', 'category', 'condition', 'state', 'city',
-          'lat', 'lng', 'imageUrl', 'status', 'createdAt', 'updatedAt'
+          'priceUsd', 'category', 'subcategory', 'condition', 'state', 'city',
+          'lat', 'lng', 'imageUrl', 'imageUrls', 'vehicleDetails', 'realEstateDetails',
+          'status', 'createdAt', 'updatedAt'
         ])
         && isValidId(data.id)
         && isValidId(data.sellerId)
@@ -57,13 +145,26 @@ service cloud.firestore {
         && data.description is string && data.description.size() <= 600
         && (data.priceUsd is int || data.priceUsd is float) && data.priceUsd > 0 && data.priceUsd <= 1000000
         && data.category is string && data.category.size() >= 1 && data.category.size() <= 50
+        && (!('subcategory' in data) || (data.subcategory is string && data.subcategory.size() >= 1 && data.subcategory.size() <= 60))
         && data.condition in ['Nuevo', 'Como nuevo', 'Usado']
         && data.state is string && data.state.size() >= 1 && data.state.size() <= 60
         && data.city is string && data.city.size() >= 1 && data.city.size() <= 60
         && (data.lat is int || data.lat is float)
         && (data.lng is int || data.lng is float)
         && data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 350000
-        && data.status in ['active', 'sold']
+        && (!('imageUrls' in data) || (
+          data.imageUrls is list
+          && data.imageUrls.size() >= 1
+          && data.imageUrls.size() <= 5
+          && isValidListingImageItem(data.imageUrls, 0)
+          && isValidListingImageItem(data.imageUrls, 1)
+          && isValidListingImageItem(data.imageUrls, 2)
+          && isValidListingImageItem(data.imageUrls, 3)
+          && isValidListingImageItem(data.imageUrls, 4)
+        ))
+        && (!('vehicleDetails' in data) || isValidVehicleDetails(data.vehicleDetails))
+        && (!('realEstateDetails' in data) || isValidRealEstateDetails(data.realEstateDetails))
+        && data.status in ['pending', 'active', 'sold', 'rejected']
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
     }
@@ -98,13 +199,18 @@ service cloud.firestore {
 
     function isValidChatMessage(data) {
       return data.keys().hasAll(['id', 'senderId', 'participantIds', 'text', 'createdAt'])
-        && data.keys().hasOnly(['id', 'senderId', 'participantIds', 'text', 'createdAt'])
+        && data.keys().hasOnly(['id', 'senderId', 'participantIds', 'text', 'type', 'imageUrl', 'audioUrl', 'audioDurationSec', 'createdAt'])
         && isValidId(data.id)
         && isValidId(data.senderId)
         && data.participantIds is list && data.participantIds.size() == 2
         && data.participantIds[0] is string && data.participantIds[0].size() <= 128
         && data.participantIds[1] is string && data.participantIds[1].size() <= 128
-        && data.text is string && data.text.size() >= 1 && data.text.size() <= 500
+        && data.text is string && data.text.size() <= 500
+        && (!('type' in data) || data.type in ['text', 'image', 'audio'])
+        && (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 350000))
+        && (!('audioUrl' in data) || (data.audioUrl is string && data.audioUrl.size() >= 1 && data.audioUrl.size() <= 350000))
+        && (!('audioDurationSec' in data) || ((data.audioDurationSec is int || data.audioDurationSec is float) && data.audioDurationSec >= 0 && data.audioDurationSec <= 120))
+        && (data.text.size() >= 1 || ('imageUrl' in data) || ('audioUrl' in data))
         && data.createdAt is timestamp;
     }
 
@@ -133,59 +239,212 @@ service cloud.firestore {
         && data.createdAt is timestamp;
     }
 
+    function isValidAdminRole(data) {
+      return data.keys().hasAll(['uid', 'email', 'grantedBy', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'grantedBy', 'createdAt'])
+        && isValidId(data.uid)
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 120
+        && isValidId(data.grantedBy)
+        && data.grantedBy == request.auth.uid
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAdminSettings(data) {
+      return data.keys().hasAll(['announcementEnabled', 'announcementText', 'allowNewListings', 'maintenanceMessage', 'updatedBy', 'updatedAt'])
+        && data.keys().hasOnly(['announcementEnabled', 'announcementText', 'allowNewListings', 'maintenanceMessage', 'updatedBy', 'updatedAt'])
+        && data.announcementEnabled is bool
+        && data.announcementText is string && data.announcementText.size() <= 280
+        && data.allowNewListings is bool
+        && data.maintenanceMessage is string && data.maintenanceMessage.size() <= 280
+        && data.updatedBy is string && data.updatedBy.size() >= 1 && data.updatedBy.size() <= 120
+        && data.updatedAt is timestamp;
+    }
+
     match /users/{userId} {
-      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
-      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && (
+        resource.data.uid == request.auth.uid
+        || (isBootstrappedAdmin() && resource.data.uid is string)
+      );
       allow create: if isVerifiedUser()
         && isValidId(userId)
         && request.auth.uid == userId
         && isValidUserProfile(incoming())
+        && incoming().uid == request.auth.uid
+        && !('suspended' in incoming())
+        && !('identityVerified' in incoming())
+        && 'username' in incoming()
+        && 'age' in incoming()
+        && 'termsAccepted' in incoming()
+        && 'termsVersion' in incoming()
+        && incoming().displayName == incoming().username
         && incoming().updatedAt == request.time;
       allow update: if isVerifiedUser()
         && isValidId(userId)
-        && request.auth.uid == userId
         && isValidUserProfile(incoming())
         && incoming().uid == existing().uid
-        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'city', 'state', 'customCategories', 'updatedAt'])
-        && incoming().updatedAt == request.time;
+        && incoming().updatedAt == request.time
+        && (
+          (
+            isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['suspended', 'identityVerified', 'updatedAt'])
+          )
+          || (
+            request.auth.uid == userId
+            && incoming().uid == request.auth.uid
+            && (!('suspended' in existing()) ? !('suspended' in incoming()) : incoming().suspended == existing().suspended)
+            && (!('identityVerified' in existing()) ? !('identityVerified' in incoming()) : incoming().identityVerified == existing().identityVerified)
+            && (!('username' in existing()) || (incoming().username == existing().username && incoming().displayName == existing().displayName))
+            && (!('age' in existing()) || incoming().age == existing().age)
+            && (!('termsAccepted' in existing()) || incoming().termsAccepted == existing().termsAccepted)
+            && (!('termsVersion' in existing()) || incoming().termsVersion == existing().termsVersion)
+            && (
+              ('username' in existing() && incoming().diff(existing()).affectedKeys().hasOnly(['photoURL', 'bio', 'city', 'state', 'customCategories', 'updatedAt']))
+              || (!('username' in existing()) && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'username', 'age', 'termsAccepted', 'termsVersion', 'photoURL', 'bio', 'city', 'state', 'customCategories', 'updatedAt']))
+            )
+          )
+        );
       allow delete: if false;
     }
 
+    match /sellers/{sellerId} {
+      allow get: if isValidId(sellerId);
+      allow list: if isBootstrappedAdmin() && resource.data.uid is string;
+      allow create: if isVerifiedUser()
+        && isValidId(sellerId)
+        && request.auth.uid == sellerId
+        && isValidPublicSeller(incoming())
+        && incoming().uid == sellerId
+        && !('identityVerified' in incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(sellerId)
+        && isValidPublicSeller(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (
+            isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['identityVerified', 'updatedAt'])
+          )
+          || (
+            request.auth.uid == sellerId
+            && (!('identityVerified' in existing()) ? !('identityVerified' in incoming()) : incoming().identityVerified == existing().identityVerified)
+            && (!existing().displayName.matches('^@.*') || incoming().displayName == existing().displayName)
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'bio', 'city', 'state', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(sellerId);
+    }
+
+    match /identity_verifications/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && (
+        resource.data.uid == request.auth.uid
+        || (isBootstrappedAdmin() && resource.data.uid is string)
+      );
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidIdentityVerification(incoming())
+        && incoming().uid == request.auth.uid
+        && incoming().status == 'pending'
+        && !('rejectionReason' in incoming())
+        && !('reviewedBy' in incoming())
+        && incoming().submittedAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && isValidIdentityVerification(incoming())
+        && incoming().uid == existing().uid
+        && incoming().updatedAt == request.time
+        && (
+          (
+            isAdmin()
+            && incoming().submittedAt == existing().submittedAt
+            && incoming().selfieUrl == existing().selfieUrl
+            && incoming().idCardUrl == existing().idCardUrl
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'rejectionReason', 'reviewedBy', 'updatedAt'])
+          )
+          || (
+            request.auth.uid == userId
+            && incoming().uid == request.auth.uid
+            && existing().status == 'rejected'
+            && incoming().status == 'pending'
+            && !('rejectionReason' in incoming())
+            && !('reviewedBy' in incoming())
+            && incoming().submittedAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'city', 'state', 'selfieUrl', 'idCardUrl', 'status', 'rejectionReason', 'reviewedBy', 'submittedAt', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    match /usernames/{handle} {
+      allow get: if isValidId(handle);
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(handle)
+        && isValidUsernameClaim(incoming())
+        && incoming().handle == handle
+        && incoming().uid == request.auth.uid
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
     match /listings/{listingId} {
-      allow get: if isValidId(listingId);
-      allow list: if resource.data.status in ['active', 'sold'];
+      allow get: if isValidId(listingId) && (
+        existing().status in ['active', 'sold']
+        || (isSignedIn() && (existing().sellerId == request.auth.uid || isAdmin()))
+      );
+      allow list: if resource.data.status in ['active', 'sold']
+        || (isSignedIn() && resource.data.sellerId == request.auth.uid)
+        || (isBootstrappedAdmin() && resource.data.id is string);
       allow create: if isVerifiedUser()
         && isValidId(listingId)
         && isValidListing(incoming())
         && incoming().id == listingId
         && incoming().sellerId == request.auth.uid
-        && incoming().status == 'active'
+        && (incoming().status == 'pending' || (isAdmin() && incoming().status == 'active'))
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
       allow update: if isVerifiedUser()
         && isValidId(listingId)
         && isValidListing(incoming())
-        && existing().status == 'active'
-        && existing().sellerId == request.auth.uid
         && incoming().id == existing().id
         && incoming().sellerId == existing().sellerId
         && incoming().createdAt == existing().createdAt
         && incoming().updatedAt == request.time
         && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'priceUsd', 'category', 'condition', 'state', 'city', 'lat', 'lng', 'imageUrl', 'updatedAt'])
-          || (incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) && incoming().status == 'sold')
+          (
+            isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'title', 'description', 'priceUsd', 'category', 'subcategory', 'condition', 'updatedAt'])
+          )
+          || (
+            existing().sellerId == request.auth.uid
+            && (
+              (existing().status in ['pending', 'active'] && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'priceUsd', 'category', 'subcategory', 'condition', 'state', 'city', 'lat', 'lng', 'imageUrl', 'imageUrls', 'vehicleDetails', 'realEstateDetails', 'updatedAt']))
+              || (existing().status == 'active' && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) && incoming().status == 'sold')
+              || (existing().status == 'pending' && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) && incoming().status == 'active' && request.time >= existing().createdAt + duration.value(30, 'm'))
+            )
+          )
         );
       allow delete: if isVerifiedUser()
         && isValidId(listingId)
-        && existing().sellerId == request.auth.uid;
+        && (existing().sellerId == request.auth.uid || isAdmin());
     }
 
     match /chats/{chatId} {
       allow get: if isSignedIn()
         && isValidId(chatId)
-        && request.auth.uid in existing().participantIds;
+        && (request.auth.uid in existing().participantIds || isAdmin());
       allow list: if isSignedIn()
-        && request.auth.uid in resource.data.participantIds;
+        && (
+          request.auth.uid in resource.data.participantIds
+          || (isBootstrappedAdmin() && resource.data.id is string)
+        );
       allow create: if isVerifiedUser()
         && isValidId(chatId)
         && isValidChatThread(incoming())
@@ -207,15 +466,23 @@ service cloud.firestore {
         && incoming().createdAt == existing().createdAt
         && incoming().lastMessageAt == request.time
         && incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'lastMessageAt']);
-      allow delete: if false;
+      allow delete: if isVerifiedUser()
+        && isValidId(chatId)
+        && (request.auth.uid in existing().participantIds || isAdmin());
 
       match /messages/{messageId} {
         allow get: if isSignedIn()
           && isValidId(chatId)
           && isValidId(messageId)
-          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
+          && (
+            request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds
+            || isAdmin()
+          );
         allow list: if isSignedIn()
-          && request.auth.uid in resource.data.participantIds;
+          && (
+            request.auth.uid in resource.data.participantIds
+            || (isBootstrappedAdmin() && resource.data.id is string)
+          );
         allow create: if isVerifiedUser()
           && isValidId(chatId)
           && isValidId(messageId)
@@ -225,16 +492,27 @@ service cloud.firestore {
           && incoming().createdAt == request.time
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds
           && incoming().participantIds == get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds;
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if isVerifiedUser()
+          && isValidId(chatId)
+          && isValidId(messageId)
+          && (
+            request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participantIds
+            || isAdmin()
+          );
       }
     }
 
     match /purchases/{purchaseId} {
       allow get: if isSignedIn()
         && isValidId(purchaseId)
-        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid);
+        && (existing().buyerId == request.auth.uid || existing().sellerId == request.auth.uid || isAdmin());
       allow list: if isSignedIn()
-        && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+        && (
+          resource.data.buyerId == request.auth.uid
+          || resource.data.sellerId == request.auth.uid
+          || (isBootstrappedAdmin() && resource.data.id is string)
+        );
       allow create: if isVerifiedUser()
         && isValidId(purchaseId)
         && isValidPurchase(incoming())
@@ -243,6 +521,39 @@ service cloud.firestore {
         && incoming().createdAt == request.time
         && exists(/databases/$(database)/documents/listings/$(incoming().listingId));
       allow update, delete: if false;
+    }
+
+    match /admins/{adminId} {
+      allow get: if isSignedIn()
+        && isValidId(adminId)
+        && (request.auth.uid == adminId || isAdmin());
+      allow list: if isBootstrappedAdmin() && resource.data.uid is string;
+      allow create: if isAdmin()
+        && isValidId(adminId)
+        && isValidAdminRole(incoming())
+        && incoming().uid == adminId
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin()
+        && isValidId(adminId)
+        && adminId != request.auth.uid;
+    }
+
+    match /admin_settings/{settingId} {
+      allow get: if isValidId(settingId) && settingId == 'global';
+      allow list: if false;
+      allow create: if isAdmin()
+        && isValidId(settingId)
+        && settingId == 'global'
+        && isValidAdminSettings(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(settingId)
+        && settingId == 'global'
+        && isValidAdminSettings(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['announcementEnabled', 'announcementText', 'allowNewListings', 'maintenanceMessage', 'updatedBy', 'updatedAt']);
+      allow delete: if false;
     }
   }
 }
